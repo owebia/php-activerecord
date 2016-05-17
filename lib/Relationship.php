@@ -471,15 +471,42 @@ class HasMany extends AbstractRelationship
 			$this->set_inferred_class_name();
 	}
 
-	protected function set_keys($model_class_name, $override=false)
-	{
-		//infer from class_name
-		if (!$this->foreign_key || $override)
-			$this->foreign_key = array(Inflector::instance()->keyify($model_class_name));
+    protected function set_keys($model_class_name, $override = false, $joining = false)
+    {
+        if ($joining) {
+            if (!$this->foreign_key || $override) {
+                if($this instanceof HasMany || $this instanceof HasOne) {
+                    $relation_opt = $this->get_table()->get_relationship($this->through)->options;
+                    if(isset($relation_opt['foreign_key'])) {
+                        $this->foreign_key = array($relation_opt['foreign_key']);
+                    } else {
+                        $this->foreign_key = array(Inflector::instance()->keyify($model_class_name));
+                    }
+                } else {
+                    $this->foreign_key = array(Inflector::instance()->keyify($model_class_name));
+                }
+            }
+            if (!$this->primary_key || $override) {
+                if($this instanceof HasMany || $this instanceof HasOne) {
+                    $relation_opt = $this->get_table()->get_relationship($this->through)->options;
+                    if(isset($relation_opt['primary_key'])) {
+                        $this->primary_key = array($relation_opt['primary_key']);
+                    } else {
+                        $this->primary_key = Table::load($model_class_name)->pk;
+                    }
+                } else {
+                    $this->primary_key = Table::load($model_class_name)->pk;
+                }
+            }
+        } else {
+            //infer from class_name
+            if (!$this->foreign_key || $override)
+                $this->foreign_key = array(Inflector::instance()->keyify($model_class_name));
 
-		if (!$this->primary_key || $override)
-			$this->primary_key = Table::load($model_class_name)->pk;
-	}
+            if (!$this->primary_key || $override)
+                $this->primary_key = Table::load($model_class_name)->pk;
+        }
+    }
 
 	public function load(Model $model)
 	{
@@ -504,7 +531,7 @@ class HasMany extends AbstractRelationship
 				$pk = $this->primary_key;
 				$fk = $this->foreign_key;
 
-				$this->set_keys($this->get_table()->class->getName(), true);
+				$this->set_keys($this->get_table()->class->getName(), true, $joining = true);
 				
 				$class = $this->class_name;
 				$relation = $class::table()->get_relationship($this->through);
