@@ -123,7 +123,7 @@ class DateTime extends \DateTime implements DateTimeInterface
 		if (!$phpDate)
 			return false;
 		// convert to this class using the timestamp
-		$ourDate = new static;
+		$ourDate = new static(null, $phpDate->getTimezone());
 		$ourDate->setTimestamp($phpDate->getTimestamp());
 		return $ourDate;
 	}
@@ -131,6 +131,20 @@ class DateTime extends \DateTime implements DateTimeInterface
 	public function __toString()
 	{
 		return $this->format();
+	}
+
+	/**
+	 * Handle PHP object `clone`.
+	 *
+	 * This makes sure that the object doesn't still flag an attached model as
+	 * dirty after cloning the DateTime object and making modifications to it.
+	 *
+	 * @return void
+	 */
+	public function __clone()
+	{
+		$this->model = null;
+		$this->attribute_name = null;
 	}
 
 	private function flag_dirty()
@@ -151,7 +165,7 @@ class DateTime extends \DateTime implements DateTimeInterface
 		return parent::setISODate($year, $week, $day);
 	}
 
-	public function setTime($hour, $minute, $second = 0)
+	public function setTime($hour, $minute, $second = 0, $microseconds = 0)
 	{
 		$this->flag_dirty();
 		return parent::setTime($hour, $minute, $second);
